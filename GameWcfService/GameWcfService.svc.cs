@@ -1,8 +1,8 @@
 ﻿namespace GameWcfService
 {
+    using System;
     using SharedLibrary;
     using SharedLibrary.Interfaces.Webservices;
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;

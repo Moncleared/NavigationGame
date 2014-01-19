@@ -21,6 +21,9 @@
     public class Location
     {
         [DataMember]
+        public float Direction { get; set; }
+
+        [DataMember]
         public float X { get; set; }
 
         [DataMember]
