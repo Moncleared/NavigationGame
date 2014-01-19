@@ -33,15 +33,34 @@
 
         public void UnregisterClient(ClientToken pClientToken)
         {
-            ClientManager.UnregisterClientToken(pClientToken);
+            if (ClientManager.IsClientTokenRegistered(pClientToken))
+            {
+                NotifyDisconnectedClient(ClientManager.RegisteredClients[pClientToken.Token].Details);
+                ClientManager.UnregisterClientToken(pClientToken);
+            }
+            else
+            {
+                gLogger.Trace("Rejecting client due to not being registered: " + pClientToken.Token);
+            }
+        }
+
+        private void NotifyDisconnectedClient(ClientDetails pClientDetails)
+        {
+            foreach (Client vClient in ClientManager.ClientsCloseBy())
+            {
+                if (vClient.Details.Id != pClientDetails.Id)
+                {
+                    vClient.Callback.ClientDisconnected(pClientDetails);
+                }
+            }
         }
 
         private void NotifyClients(ClientDetails pClientDetails)
         {
-            foreach(KnownClient vClient in ClientManager.ClientsCloseBy() ) {
-                if (vClient.ClientDetails.Id != pClientDetails.Id)
+            foreach(Client vClient in ClientManager.ClientsCloseBy() ) {
+                if (vClient.Details.Id != pClientDetails.Id)
                 {
-                    vClient.ClientCallBack.UpdateClient(pClientDetails);
+                    vClient.Callback.UpdateClient(pClientDetails);
                 }
             }
         }
@@ -52,12 +71,12 @@
             {
                 if (ClientManager.IsClientTokenRegistered(pClientToken))
                 {
-                    this.NotifyClients(pClientDetails);
                     ClientManager.UpdateClientDetails(pClientToken, pClientDetails);
+                    this.NotifyClients(pClientDetails);
                 }
                 else
                 {
-                    Console.WriteLine("Rejecting client due to not being registered");
+                    gLogger.Trace("Rejecting client due to not being registered: " + pClientToken.Token);
                 }
             }
             catch (Exception vException)

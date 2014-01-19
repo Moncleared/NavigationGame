@@ -14,6 +14,14 @@
         [OperationContract(IsOneWay = true)]
         void UpdateClient(ClientDetails pClientDetails);
 
+
+        /// <summary>
+        /// Client Disconnected
+        /// </summary>
+        /// <param name="pClientDetails"></param>
+        [OperationContract(IsOneWay = true)]
+        void ClientDisconnected(ClientDetails pClientDetails);
+
         /// <summary>
         /// Servers way to validating a client is still alive and responding
         /// </summary>

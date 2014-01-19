@@ -10,7 +10,7 @@ namespace GameWcfService
     internal static class ClientManager
     {
         private static Logger gLogger = LogManager.GetLogger("ClientManager");
-        private static Dictionary<Guid, KnownClient> RegisteredTokens = new Dictionary<Guid, KnownClient>();
+        internal static Dictionary<Guid, Client> RegisteredClients = new Dictionary<Guid, Client>();
         private static Random gRandom = new Random();
         private static object gLock = new object();
 
@@ -22,22 +22,22 @@ namespace GameWcfService
 
         public static void UpdateClientDetails(ClientToken pClientToken, ClientDetails pClientDetails)
         {
-            RegisteredTokens[pClientToken.Token].ClientDetails = pClientDetails;
+            RegisteredClients[pClientToken.Token].Details = pClientDetails;
         }
 
         private static void ValidateClientConnections(object pObjectState)
         {
             while (true)
             {
-                List<KnownClient> vClientsToRemove = new List<KnownClient>();
-                List<KnownClient> vConnectedClients;
+                List<Client> vClientsToRemove = new List<Client>();
+                List<Client> vConnectedClients;
                 lock (gLock)
                 {
-                    vConnectedClients = new List<KnownClient>(RegisteredTokens.Values);
+                    vConnectedClients = new List<Client>(RegisteredClients.Values);
                 }
 
                 //Determine which Clients are Active/In-Active
-                foreach (KnownClient vClient in vConnectedClients)
+                foreach (Client vClient in vConnectedClients)
                 {
                     ThreadPool.QueueUserWorkItem(ValidateClientConnection,vClient);
                 }
@@ -48,20 +48,20 @@ namespace GameWcfService
 
         private static void ValidateClientConnection(object pObjectState)
         {
-            KnownClient vClient = pObjectState as KnownClient;
+            Client vClient = pObjectState as Client;
             try
             {
-                if (vClient.ClientCallBack.IsClientAlive())
+                if (vClient.Callback.IsClientAlive())
                 {
-                    gLogger.Trace("Client is active: " + vClient.ClientToken.Token);
+                    gLogger.Trace("Client is active: " + vClient.Token.Token);
                 }
             }
             catch
             {
-                gLogger.Trace("Disconnecting user: " + vClient.ClientToken.Token);
+                gLogger.Trace("Disconnecting user: " + vClient.Token.Token);
                 lock (gLock)
                 {
-                    RegisteredTokens.Remove(vClient.ClientToken.Token);
+                    RegisteredClients.Remove(vClient.Token.Token);
                 }
             }
         }
@@ -70,13 +70,13 @@ namespace GameWcfService
         {
             lock (gLock)
             {
-                if (RegisteredTokens.ContainsKey(pClientToken.Token))
+                if (RegisteredClients.ContainsKey(pClientToken.Token))
                 {
-                    RegisteredTokens[pClientToken.Token] = new KnownClient(pClientToken, pCallback);
+                    RegisteredClients[pClientToken.Token] = new Client(pClientToken, pCallback);
                 }
                 else
                 {
-                    RegisteredTokens.Add(pClientToken.Token, new KnownClient(pClientToken, pCallback));
+                    RegisteredClients.Add(pClientToken.Token, new Client(pClientToken, pCallback));
                 }
             }
             gLogger.Trace("Client Registered: " + pClientToken.Token);
@@ -86,31 +86,32 @@ namespace GameWcfService
         {
             lock (gLock)
             {
-                RegisteredTokens.Remove(pClientToken.Token);
+                RegisteredClients.Remove(pClientToken.Token);
             }
+            gLogger.Trace("Client Unregistered: " + pClientToken.Token);
         }
 
         internal static bool IsClientTokenRegistered(ClientToken pClientToken)
         {
-            return RegisteredTokens.ContainsKey(pClientToken.Token);
+            return RegisteredClients.ContainsKey(pClientToken.Token);
         }
 
-        internal static IEnumerable<KnownClient> ClientsCloseBy()
+        internal static IEnumerable<Client> ClientsCloseBy()
         {
-            return RegisteredTokens.Values;
+            return RegisteredClients.Values;
         }
     }
 
-    internal class KnownClient
+    internal class Client
     {
-        internal KnownClient(ClientToken pClientToken, IGameWcfServiceCallback pClientCallBack)
+        internal Client(ClientToken pToken, IGameWcfServiceCallback pCallBack)
         {
-            ClientToken = pClientToken;
-            ClientCallBack = pClientCallBack;
-            ClientDetails = new ClientDetails();
+            Token = pToken;
+            Callback = pCallBack;
+            Details = new ClientDetails();
         }
-        internal ClientToken ClientToken { get; set; }
-        internal IGameWcfServiceCallback ClientCallBack { get; set; }
-        internal ClientDetails ClientDetails { get; set; }
+        internal ClientToken Token { get; set; }
+        internal IGameWcfServiceCallback Callback { get; set; }
+        internal ClientDetails Details { get; set; }
     }
 }

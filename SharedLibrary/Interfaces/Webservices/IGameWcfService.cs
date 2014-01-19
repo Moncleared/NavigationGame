@@ -1,5 +1,6 @@
 ﻿namespace SharedLibrary.Interfaces.Webservices
 {
+    using System;
     using System.Collections.Generic;
     using System.ServiceModel;
 
